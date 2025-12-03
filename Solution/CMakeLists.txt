@@ -11,5 +11,8 @@ add_executable(sensor_program
     utils.c
 )
 
+target_compile_options(sensor_program PRIVATE -pg)
+target_link_options(sensor_program PRIVATE -pg)
+
 find_package(Threads REQUIRED)
 target_link_libraries(sensor_program PRIVATE Threads::Threads)
