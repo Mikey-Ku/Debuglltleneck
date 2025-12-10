@@ -1,19 +1,19 @@
 [
 {
   "directory": "/home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/build",
-  "command": "/usr/bin/cc    -Wall -Wextra -g -g -std=gnu11 -pg -o CMakeFiles/sensor_program.dir/main.c.o -c /home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/src/main.c",
+  "command": "/usr/bin/cc    -Wall -Wextra -g -g -std=gnu11 -o CMakeFiles/sensor_program.dir/main.c.o -c /home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/src/main.c",
   "file": "/home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/src/main.c",
   "output": "CMakeFiles/sensor_program.dir/main.c.o"
 },
 {
   "directory": "/home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/build",
-  "command": "/usr/bin/cc    -Wall -Wextra -g -g -std=gnu11 -pg -o CMakeFiles/sensor_program.dir/sensor.c.o -c /home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/src/sensor.c",
+  "command": "/usr/bin/cc    -Wall -Wextra -g -g -std=gnu11 -o CMakeFiles/sensor_program.dir/sensor.c.o -c /home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/src/sensor.c",
   "file": "/home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/src/sensor.c",
   "output": "CMakeFiles/sensor_program.dir/sensor.c.o"
 },
 {
   "directory": "/home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/build",
-  "command": "/usr/bin/cc    -Wall -Wextra -g -g -std=gnu11 -pg -o CMakeFiles/sensor_program.dir/utils.c.o -c /home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/src/utils.c",
+  "command": "/usr/bin/cc    -Wall -Wextra -g -g -std=gnu11 -o CMakeFiles/sensor_program.dir/utils.c.o -c /home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/src/utils.c",
   "file": "/home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/src/utils.c",
   "output": "CMakeFiles/sensor_program.dir/utils.c.o"
 }

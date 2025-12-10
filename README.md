@@ -1,20 +1,12 @@
-# C Debugging & Bottleneck Workbook  
-*A guided debugging and performance-learning project*
+# C Debugging & Bottleneck Workbook
 
-This repository contains a small multithreaded C program designed to help you learn how to:
+This repository contains the [**C Debugging & Performance Handbook**](workbook.md) along with all supporting source code used throughout the exercises. The goal of this project is to give you a practical, example-driven environment for learning how C programs behave at runtime,and how to diagnose and fix the memory errors, crashes, race conditions, and performance bottlenecks that appear in real systems.
 
-- Debug C programs  
-- Use tools like GDB, Valgrind and gprof  
-- Identify bottlenecks in multithreaded code  
-- Optimize synchronization, memory usage, and program structure  
-- Compare broken code with corrected solutions  
+You’ll learn by reading the handbook and by actively debugging the intentionally broken code in [`src/`](src), then comparing your solutions to the fully corrected version in [`Solution/`](Solution).
 
-This project pairs with the **Debugging & Bottleneck Workbook (PDF)** included in this repository. The workbook walks you step-by-step through the debugging and optimization journey.
-
----
-
-## Project Structure
-├── workbook.pdf # The full debugging + performance workbook
+## Repository Structure
+```
+├── workbook.md # The full debugging + performance workbook
 │
 ├── src/ # The intentionally bugged starter code
 │ ├── main.c
@@ -29,76 +21,62 @@ This project pairs with the **Debugging & Bottleneck Workbook (PDF)** included i
 │ ├── sensor.c
 │ ├── sensor.h
 │ ├── utils.c
-│ └── utils.h
+│ ├── utils.h
 │ └── CMakeLists.txt
 └── README.md
+```
 ## Purpose of This Project
+This project is designed to be both a learning guide and a hands-on debugging lab.  
+The handbook explains different concepts such as memory layout, segmentation faults, profiling tools, and optimization techniques, while the source code lets you immediately practice those skills.
 
-This repository is built to accompany the workbook.  
-By the end of the walkthrough, you will:
+By working through the workbook, you will learn to:
 
-1. **Debug the original code**  
-   - Fix segmentation faults  
-   - Fix memory leaks  
-   - Fix race conditions  
-   - Fix logic errors  
+#### 1. Debug the Original Code
+- Identify and fix segmentation faults  
+- Track down memory leaks and invalid accesses  
+- Correct logic errors and undefined behavior  
 
-2. **Analyze performance issues**  
-   - Identify the bottleneck in `sensor_thread()`  
-   - Measure performance with gprof, perf, and Callgrind  
-   - Observe mutex contention and duplicated thread work  
+#### 2. Analyze Performance
+- Detect bottlenecks
+- Use gprof to measure runtime cost  
+- Understand mutex contention and duplicated thread work  
 
-3. **Optimize the code**  
-   - Remove oversynchronization  
-   - Reduce unnecessary computation  
-   - Improve memory usage  
-   - Achieve a clean, efficient solution  
-
-Your final version should match the code in the **Solutions** folder.
----
+#### 3. Optimize the Program
+- Remove oversynchronization  
+- Reduce unnecessary computation  
+- Improve memory usage  
+- Produce a clean, efficient, scalable solution  
 
 ## Getting Started
 
-### 1. Build the bugged program
+#### 1. Build the Bugged Program
+Use the included CMake configuration to compile the starter code.  
 
-Build the program using CMake extension:
-Run the program using run button or ./sensor_program in the command line
+#### 2. Follow the Workbook
+Open [`workbook.md`](workbook.md). It will walk you through the full debugging and optimization process:
+- Debugging crashes with gdb  
+- Finding leaks and invalid memory accesses with Valgrind  
+- Incrementally fixing the code  
+- Profiling performance problems  
+- Applying optimizations and verifying improvements  
 
-## 2. Follow the Workbook
+Work through the sections in order, applying changes directly to the files in [`src/`](src).
 
-Open the included PDF: `workbook.pdf`
+## Comparing Your Results
 
-The workbook will guide you through:
+When you want to verify your work, open the [`Solutions/`](Solution) directory.
 
-- Using gdb to debug crashes  
-- Using Valgrind to find memory leaks/invalid accesses  
-- Fixing the bugged code step-by-step  
-- Rebuilding after each change  
-- Running profiling tools  
-- Optimizing the final version  
-
-Follow the workbook **section by section**, fixing the code as you go.
-
----
-
-## 3. Testing Your Fixes
-
-At any point, you may compare your progress with the code in:
-Solutions/
-
-This contains:
-
+It contains:
 - The fully corrected, memory-safe version  
-- The optimized version with debottlenecked threading  
+- The optimized version with proper threading and debottlenecked behavior  
 
-## Goal
+## Final Learning Outcomes
 
-By the end of this project, you should be able to:
+By completing this project, you will be able to:
 
-- Fully fix every bug  
-- Remove memory leaks  
-- Avoid race conditions  
-- Split thread workloads properly  
-- Remove unnecessary locking  
-- Optimize the entire sensor processing pipeline  
-- Produce the same final code found in the `Solutions/` folder  
+- Diagnose and fix real C crashes  
+- Eliminate memory leaks and invalid pointer operations  
+- Avoid race conditions and oversynchronization  
+- Distribute thread workloads effectively  
+- Use profiling tools to guide optimization  
+- Improve runtime performance through informed code changes  
