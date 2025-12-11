@@ -1,3 +1,0 @@
-/home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/build/CMakeFiles/sensor_program.dir
-/home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/build/CMakeFiles/edit_cache.dir
-/home/mikeyku/softsys/debugneck_handbook/Debuglltleneck/build/CMakeFiles/rebuild_cache.dir
