@@ -109,13 +109,36 @@ After building and running the program, this is the result we get in our termina
 
 Let’s go through the problems one at a time. The first noticeable issue is that the “loaded config” text prints as null. That immediately suggests a problem in the code responsible for reading the file. The configuration file itself does exist, so the issue likely stems from how the file is read or how memory is handled. This leads us straight to the `read_file` function in utils.c.
 
- ![image 3](md_images/image3.png)
+ ```
+ char* read_file(const char* path) {
+    FILE* f = fopen(path, "r");
+    if (!f) return NULL;
+
+    char buffer[256];
+    fread(buffer, 1, 255, f);
+    buffer[255] = '\0';
+    fclose(f);
+    return buffer;
+}
+```
 
 Inside `read_file` , we see that the function takes a file path and returns a char* that should point to a buffer containing the file contents. The function can return NULL for two reasons: either the file cannot be opened, or something went wrong while reading it. At first glance everything seems reasonable, but the real problem is that the function creates a buffer as a local variable on the stack and then returns a pointer to it. Because that buffer goes out of scope as soon as the function returns, the pointer becomes invalid, which results in a dangling pointer. This explains why the config variable in main.c prints as NULL.
 
 To fix this, we first ensure that the file is placed in the correct directory so it can actually be opened. Then, instead of having the buffer as a local variable, we allocate memory for it on the heap using malloc. We read the file contents into this allocated space and then return that pointer. Since heap memory persists beyond the end of the function, main.c can safely use the returned string.
 
- ![image 4](md_images/image4.png)
+
+ ```c
+ char* read_file(const char* path) {
+    FILE* f = fopen(path, "r");
+    if (!f) return NULL;
+
+    char* buffer = malloc(256);
+    fread(buffer, 1, 255, f);
+    buffer[255] = '\0';
+    fclose(f);
+    return buffer;
+}
+ ```
 
 After making this change and re-running the program, the configuration loads correctly, confirming that the bug is fixed.
 
@@ -127,19 +150,51 @@ Let’s turn our attention to [`sensor.c`](src/sensor.c), which defines the sens
 
 - `init_sensor` is used for allocating and initializing sensor data. This can be seen below:
   
- ![image 6](md_images/image6.png)
-
+```c
+SensorData* init_sensor(int count) {
+    SensorData* s = malloc(sizeof(SensorData));
+    s->readings = malloc(sizeof(int) * count);
+    s->count = count;
+    pthread_mutex_init(&s->lock, NULL);
+    for (int i = 0; i < count; i++) {
+        s->readings[i] = rand() % 100;
+    }
+    return s;
+}
+```
 - `sensor_thread` for updating the readings in each thread. This is shown below:
   
- ![image 7](md_images/image7.png)
-
+```c
+void* sensor_thread(void* arg) {    
+    SensorData* s = (SensorData*) arg;
+    pthread_mutex_lock(&s->lock);
+    for (int i = 0; i < s->count; i++) {
+        s->readings[i] += 5;
+    }
+    pthread_mutex_unlock(&s->lock);
+    return NULL;
+}
+```
 - `compute_average` is for processing the final values and computing averages.
   
- ![image 8](md_images/image8.png)
+```c
+double compute_average(SensorData* s) {
+    int sum = 0;
+    for (int i = 0; i < s->count; i++) {
+        sum += s->readings[i];
+    }
+    return sum / s->count;
+}
+```
 
 - `free_sensor` for cleaning up allocated memory.
 
- ![image 9](md_images/image9.png)
+```c
+void free_sensor(SensorData* s) {
+    free(s->readings);
+    free(s);
+}
+```
  
 Understanding how each of these functions handles memory is essential for diagnosing the glibc error.
 
@@ -153,11 +208,28 @@ After making this change, I wanted to dig deeper into the error, so I ran GDB to
 
 When we look at this output, we can see that the program still aborted with the same glibc error. After noticing that, I went back to the function we modified and remembered something important. In the definition of the `SensorData` structure, there are three fields that must be correctly initialized. This structure is shown below:
 
- ![image 11](md_images/image11.png)
+```c
+typedef struct {
+    int* readings;
+    int count;
+    pthread_mutex_t lock;
+} SensorData;
+```
 
 From this, we can also see that the struct contains a mutex that needs to be properly initialized. In our current code, this mutex was never initialized, which can lead to serious errors during runtime. To fix this, we need to initialize the mutex inside the init_sensor function. Below is the updated version of the init_sensor function:
 
- ![image 12](md_images/image12.png)
+```c
+SensorData* init_sensor(int count) {
+    SensorData* s = malloc(sizeof(SensorData));
+    s->readings = malloc(sizeof(int) * count);
+    s->count = count;
+    pthread_mutex_init(&s->lock, NULL);
+    for (int i = 0; i < count; i++) {
+        s->readings[i] = rand() % 100;
+    }
+    return s;
+}
+```
 
 Now when we run our program in the GDB our response looks like this:
 
@@ -184,8 +256,17 @@ Looking at `read_file`, we notice a key problem: when we allocate memory and sta
 
 To fix this, the simplest solution is to replace malloc with calloc. calloc automatically initializes all allocated memory to zero, ensuring there are no uninitialized values even if we don't overwrite every element.
 
- ![image 17](md_images/image17.png)
-
+ ```c
+ char* read_file(const char* path) {
+    FILE* f = fopen(path, "r");
+    if (!f) return NULL;
+    char* buffer = calloc(1,256);
+    fread(buffer, 1, 255, f);
+    buffer[255] = '\0';
+    fclose(f);
+    return buffer;
+}
+ ```
 After making that change, the conditional jump warnings disappear, which lets us turn our attention to the memory leaks. Valgrind still reports issues in `read_file`, specifically memory that was allocated but never freed. This happens because we allocate space inside the function but never release it once we’re done using it.
 
 The fix is straightforward: after we finish using the data returned by `read_file`, we need to free that memory. In this case, the config variable holds the returned buffer, so we simply add a `free(config)`; statement after the final printf in main.c. This ensures that the space allocated in `read_file` is properly freed before the program exits.
@@ -194,8 +275,14 @@ Once that issue is resolved, we can move on to the next leak Valgrind reports, w
 
 The fix is simple: after we finish printing the banner, we need to free the msg variable that was allocated. Adding a `free(msg);` at the end of the print_banner function ensures that this memory is properly released.
 
- ![image 18](md_images/image18.png)
-
+```c
+void print_banner() {
+    char *msg = malloc(20);
+    strcpy(msg, "Sensor Program v1.0");
+    printf("%s\n", msg);
+    free(msg);
+}
+```
 This fixes that memory issue, and after applying this change, Valgrind reports zero definitely lost bytes, which means all confirmed leaks are resolved. However, we still have a few possible leaks that Valgrind flags. These are not guaranteed leaks, but they are still worth investigating to make sure everything is fully cleaned up. Here is the current Valgrind output:
 
  ![image 19](md_images/image19.png)
@@ -204,8 +291,24 @@ Now we can address the final two issues, both of which are reported as possible 
 
 To fix this, we use `pthread_join`, which tells the system that the thread has finished and allows its resources to be fully cleaned up. Once we add `pthread_join` calls for both threads, the updated main.c file looks like this:
 
- ![image 20](md_images/image20.png)
-
+```c
+int main() {
+    print_banner();
+    char* config = read_file("config.txt");
+    printf("Loaded config: %s\n", config);
+    SensorData* sensor_data = init_sensor(10);
+    pthread_t t1, t2;
+    pthread_create(&t1, NULL, sensor_thread, sensor);
+    pthread_create(&t2, NULL, sensor_thread, sensor);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    double avg = compute_average(sensor);
+    printf("Average reading: %f\n", avg);
+    free_sensor(sensor);
+    free(config);
+    return 0;
+}
+```
 After this, our valgrind looks clean:
 
  ![image 21](md_images/image21.png)
@@ -239,7 +342,26 @@ These goals stay the same no matter what, but now that everything runs without e
 To analyze performance, I decided to use `gprof` as the main profiler. To get gprof working, we need to adjust our CMake setup because gprof requires some extra compiler flags. The most important one is `-pg`, which enables profiling by tracking function calls and timing information. Without this flag, gprof can't generate the output file we need.
 So, I updated the CMakeLists file and applied the `-pg` flag to the sensor_program target. After the change, the CMake configuration looks something like this:
 
- ![image 22](md_images/image22.png)
+ ```cmake
+ cmake_minimum_required(VERSION 3.10)
+
+project(sensor_project C)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -g")
+
+add_executable(sensor_program
+    main.c
+    sensor.c
+    utils.c
+)
+
+target_compile_options(sensor_program PRIVATE -pg)
+target_link_options(sensor_program PRIVATE -pg)
+
+find_package(Threads REQUIRED)
+target_link_libraries(sensor_program PRIVATE Threads::Threads)
+```
 
 With that change in place, running the program from the command line now generates a gmon.out file. That file is where all the profiling data gets stored. Once it appears, we can run the gprof command to turn that raw data into a readable report. That report will show us exactly how much time each function took and where the program spent most of its effort.
 
@@ -261,7 +383,19 @@ Looking at this updated profile, one thing immediately stands out: sensor_thread
 
 Now that we know where the slowdown is happening, we can focus directly on this function and look for ways to speed it up. Here is the current version of our sensor_thread function:
 
- ![image 26](md_images/image26.png)
+```c
+void* sensor_thread(void* arg) {    
+    SensorData* s = (SensorData*) arg;
+
+    for (int i = 0; i < s->count; i++) {
+        pthread_mutex_lock(&s->lock);
+        s->readings[i] += 5;
+        pthread_mutex_unlock(&s->lock);
+        usleep(5000); 
+    }
+    return NULL;
+}
+```
 
 Now let’s take a closer look at why this function is taking so much time. The biggest issue becomes obvious pretty quickly: inside this loop, which can run tens of thousands of times, we lock and unlock the mutex every single iteration. Mutex operations are expensive, and doing them repeatedly in a tight loop adds a huge amount of overhead.
 
@@ -279,7 +413,17 @@ While we're debugging, we can also comment out or remove the usleep call, since 
 
 With these changes in mind, the improved version of the sensor_thread function looks like this:
 
- ![image 27](md_images/image27.png)
+```c
+void* sensor_thread(void* arg) {    
+    SensorData* s = (SensorData*) arg;
+    pthread_mutex_lock(&s->lock);
+    for (int i = 0; i < s->count; i++) {
+        s->readings[i] += 5;
+    }
+    pthread_mutex_unlock(&s->lock);
+    return NULL;
+}
+```
 
 With these changes, we have now targeted the biggest bottleneck in our program and removed one of the main reasons it used so much time and computing power. After getting rid of all the unnecessary mutex operations inside the loop, the function runs much faster. It becomes so fast that gprof can barely record it anymore, and the program performs almost the same as when we were only processing 10 values.
 

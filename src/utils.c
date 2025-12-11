@@ -7,7 +7,7 @@ char* read_file(const char* path) {
     FILE* f = fopen(path, "r");
     if (!f) return NULL;
 
-    char* buffer = malloc(256);
+    char buffer[256];
     fread(buffer, 1, 255, f);
     buffer[255] = '\0';
     fclose(f);
